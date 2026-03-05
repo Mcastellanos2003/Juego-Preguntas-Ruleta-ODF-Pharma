@@ -170,6 +170,7 @@
     }
 
     btnStart.addEventListener("click", async () => {
+      if (btnStart.disabled) return;
       const nombre = (inpName.value || "").trim();
       const telefono = (inpPhone.value || "").replace(/[^\d]/g,"");
 
