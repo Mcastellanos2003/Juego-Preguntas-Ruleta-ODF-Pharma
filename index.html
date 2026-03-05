@@ -143,11 +143,12 @@
     async function apiPost(payload){
   const res = await fetch(ENDPOINT, {
     method: "POST",
-    // 👇 IMPORTANTE: text/plain evita el preflight (OPTIONS) de CORS
-    headers: { "Content-Type":"text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
   });
-  return await res.json();
+
+  const text = await res.text();
+  return JSON.parse(text);
 }
 
     function openOverlay(){
