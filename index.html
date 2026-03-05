@@ -172,37 +172,36 @@
     btnStart.addEventListener("click", async () => {
       if (btnStart.disabled) return;
       const nombre = (inpName.value || "").trim();
-      const telefono = (inpPhone.value || "").replace(/[^\d]/g,"");
+      const telefono = (inpPhone.value || "").trim(); // puede ser vacío
 
       if (!nombre) return showOverlayError("Escribe tu nombre.");
-      if (!telefono) return showOverlayError("El teléfono es obligatorio (solo números).");
+      // teléfono NO obligatorio
 
       btnStart.disabled = true;
       overlayStatus.style.display = "block";
       overlayStatus.textContent = "Verificando teléfono...";
 
       try{
-        const r = await apiPost({ action:"start", nombre, telefono });
-        if (!r.ok && r.duplicate){
-          btnStart.disabled = false;
-          return showOverlayError("Este teléfono ya participó. Solo se permite 1 vez.");
-        }
-        if (!r.ok){
-          btnStart.disabled = false;
-          return showOverlayError("Error: " + (r.error || "No se pudo iniciar"));
-        }
+  // Intentamos registrar, pero si falla igual dejamos jugar
+  const r = await apiPost({ action:"start", nombre, telefono });
 
-        player = { nombre, telefono };
-        sessionRow = r.sessionRow;
+  // Ya NO bloqueamos por duplicado ni por teléfono
+  if (r && r.ok) {
+    sessionRow = r.sessionRow;
+  } else {
+    sessionRow = null; // no pasa nada
+  }
 
-        overlay.style.display = "none";
-        btnStart.disabled = false;
-        startGame();
+} catch (err) {
+  // Si no conecta, NO bloqueamos el juego
+  sessionRow = null;
+}
 
-      }catch(err){
-        btnStart.disabled = false;
-        return showOverlayError("No se pudo conectar. Revisa internet e intenta otra vez.");
-      }
+// SIEMPRE dejaremos jugar
+player = { nombre, telefono };
+overlay.style.display = "none";
+btnStart.disabled = false;
+startGame();
     });
 
     function startGame(){
@@ -255,18 +254,19 @@
     }
 
     async function finishToSheet(premio){
-      try{
-        await apiPost({
-          action:"finish",
-          nombre: player.nombre,
-          telefono: player.telefono,
-          sessionRow,
-          correctas: correct,
-          paso_quiz: (correct >= 3),
-          premio: premio || ""
-        });
-      }catch(e){}
-    }
+  // si no hubo sessionRow, igual intentamos (opcional), pero no bloquea
+  try{
+    await apiPost({
+      action:"finish",
+      nombre: player.nombre,
+      telefono: player.telefono || "",
+      sessionRow: sessionRow || "",
+      correctas: correct,
+      paso_quiz: (correct >= 3),
+      premio: premio || ""
+    });
+  }catch(e){}
+}
 
     function endQuiz(){
       passedQuiz = correct >= 3;
